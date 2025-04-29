@@ -11,21 +11,18 @@ async function connectDB() {
     return cached.conn;
   }
 
-  if (!process.env.MONGODB_URI) {
+  const uri = process.env.MONGODB_URI;
+  if (!uri) {
     throw new Error("MONGODB_URI is not defined in environment variables");
   }
 
-  if (!cached.promise) {
-    const opts = {
-      bufferCommands: false,
-    };
+  const opts = {
+    bufferCommands: false,
+  };
 
-    cached.promise = mongoose
-      .connect(`${process.env.MONGODB_URI}/quickcart`, opts)
-      .then((mongoose) => mongoose);
-  }
-
+  cached.promise = mongoose.connect(uri, opts).then((mongoose) => mongoose);
   cached.conn = await cached.promise;
+
   return cached.conn;
 }
 
