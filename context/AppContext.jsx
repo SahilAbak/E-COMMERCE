@@ -2,7 +2,9 @@
 import { productsDummyData, userDummyData } from "@/assets/assets";
 import { useRouter } from "next/navigation";
 import { createContext, useContext, useEffect, useState } from "react";
-import { useUser } from '@clerk/nextjs';
+import { useAuth, useUser } from '@clerk/nextjs';
+import axios from "axios";
+import toast from "react-hot-toast";
 
 
 export const AppContext = createContext();
@@ -17,6 +19,7 @@ export const AppContextProvider = (props) => {
     const router = useRouter()
 
     const {  user } = useUser()
+    const { getToken } = useAuth()
 
 
     const [products, setProducts] = useState([])
@@ -29,7 +32,31 @@ export const AppContextProvider = (props) => {
     }
 
     const fetchUserData = async () => {
-        setUserData(userDummyData)
+        try {
+
+            if (user.publicMetadata.role === 'seller'){
+                setIsSeller(true)
+            }
+
+            const token = await getToken()
+
+            const { data} = await axios.get('/api/user/data', { headers: { Authorization : ' Bearer $ {token}'}})
+
+            if(data.success){
+                setUserData(data.user)
+                setCartItems(data.User.cartItems)
+
+            }
+            else{
+                toast.error(data.message)
+
+            }
+            
+            
+        } catch (error) {
+            toast.error(error.message)
+            
+        }
     }
 
     const addToCart = async (itemId) => {
@@ -83,11 +110,13 @@ export const AppContextProvider = (props) => {
     }, [])
 
     useEffect(() => {
+        if (user){
         fetchUserData()
+        }
     }, [])
 
     const value = {
-        user, 
+        user, getToken ,
         currency, router,
         isSeller, setIsSeller,
         userData, fetchUserData,
